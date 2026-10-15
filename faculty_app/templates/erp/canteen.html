@@ -1,0 +1,77 @@
+{% extends 'erp/base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border-left: 5px solid #198754 !important;">
+            <div class="card-body">
+                <h3 class="fw-bold mb-1" style="color: #2b2d42;">{{ t.canteen_title|default:"Canteen & Meals" }}</h3>
+                <p class="text-muted small mb-0">{{ t.meal_price_info|default:"Standard price: 1.57 EUR (Subsidized for students)" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Order Form Column -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">{{ t.order_meal_btn|default:"Place Meal Order" }}</h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.table_member|default:"Member ID" }}</label>
+                        <input type="number" name="member_id" class="form-control" required placeholder="npr. 1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Meal Type / Mahlzeitentyp</label>
+                        <select name="meal_type" class="form-select">
+                            <option value="Frühstück / Breakfast">Frühstück / Breakfast</option>
+                            <option value="Mittagessen / Lunch" selected>Mittagessen / Lunch</option>
+                            <option value="Abendessen / Dinner">Abendessen / Dinner</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 fw-bold">{{ t.order_meal_btn|default:"Place Meal Order" }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Canteen Orders Table Column -->
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">📋 {{ t.recent_orders|default:"Recent Orders" }}</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>{{ t.table_member|default:"Member" }}</th>
+                                <th>Meal Type</th>
+                                <th>{{ t.table_amount|default:"Price" }}</th>
+                                <th>{{ t.table_date|default:"Date" }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in canteen_orders %}
+                            <tr>
+                                <td>{{ order.id }}</td>
+                                <td>{{ order.member.full_name }}</td>
+                                <td><span class="badge bg-secondary">{{ order.meal_type }}</span></td>
+                                <td class="fw-bold text-success">{{ order.price }} €</td>
+                                <td>{{ order.date }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No canteen orders recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

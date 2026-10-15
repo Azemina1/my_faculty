@@ -1,0 +1,128 @@
+{% extends 'erp/base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border-left: 5px solid #0d6efd !important;">
+            <div class="card-body">
+                <h3 class="fw-bold mb-1" style="color: #2b2d42;">{{ t.dashboard|default:"Dashboard & Library" }}</h3>
+                <p class="text-muted small mb-0">Manage faculty members by roles, issue library books, and monitor active campus operations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Member Registration Form Column -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">👤 {{ t.member_reg|default:"Member Registration" }}</h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_member">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.full_name }}</label>
+                        <input type="text" name="full_name" class="form-control" required placeholder="e.g. John Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.jmbg }}</label>
+                        <input type="text" name="jmbg" class="form-control" required maxlength="13" placeholder="13 digits">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.card_number }}</label>
+                        <input type="text" name="card_number" class="form-control" required maxlength="11" placeholder="11 digits">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.email }}</label>
+                        <input type="email" name="email" class="form-control" required placeholder="name@faculty.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.role }}</label>
+                        <select name="role" class="form-select">
+                            <option value="STUDENT">{{ t.student }}</option>
+                            <option value="CITIZEN">{{ t.citizen }}</option>
+                            <option value="PROFESSOR">{{ t.professor }}</option>
+                            <option value="EXTERNAL_PROFESSOR">{{ t.external_professor }}</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">{{ t.save_member }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Members & Books Section -->
+    <div class="col-md-8">
+        <!-- Top Members Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">⭐ {{ t.top_members }}</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Card No</th>
+                                <th>Loans</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in top_members %}
+                            <tr>
+                                <td><strong>{{ m.full_name }}</strong></td>
+                                <td><span class="badge bg-info text-dark">{{ m.get_role_display }}</span></td>
+                                <td>{{ m.card_number }}</td>
+                                <td><span class="badge bg-secondary">{{ m.loan_count }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">{{ t.no_loans }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Books Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">📖 {{ t.latest_books }}</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for book in latest_books %}
+                            <tr>
+                                <td><strong>{{ book.title }}</strong></td>
+                                <td>{{ book.author }}</td>
+                                <td>
+                                    {% if book.is_available %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Loaned</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">{{ t.no_books }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

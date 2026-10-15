@@ -1,0 +1,127 @@
+{% extends 'erp/base.html' %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background-color: #f8f9fa; border-left: 5px solid #6f42c1 !important;">
+            <div class="card-body">
+                <h3 class="fw-bold mb-1" style="color: #2b2d42;">{{ t.moodle_title }}</h3>
+                <p class="text-muted small mb-0">Academic exam registration portal, recommended course literature, and student GPA analytics.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Exam Registration & Recommendation Form -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">📝 {{ t.register_exam }}</h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="register_exam">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Member ID</label>
+                        <input type="number" name="member_id" class="form-control" required placeholder="e.g. 1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">{{ t.exam_name }}</label>
+                        <input type="text" name="exam_name" class="form-control" required placeholder="e.g. Data Structures">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Recommended Library Book (Optional)</label>
+                        <select name="recommended_book_id" class="form-select">
+                            <option value="">-- Select Book --</option>
+                            {% for book in all_books %}
+                                <option value="{{ book.id }}">{{ book.title }} by {{ book.author }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 fw-bold">Submit Exam Application</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Honor Roll & GPA Rankings (> 5 Passed Exams) -->
+        <div class="card shadow-sm border-0 mt-4 bg-light border-start border-warning border-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-dark mb-3">🏆 {{ t.honor_roll }}</h6>
+                {% if has_enough_gpa_data %}
+                    <p class="small text-muted fw-bold mb-1">Top 3 Students (GPA):</p>
+                    <ul class="list-group list-group-flush small mb-3 bg-transparent">
+                        {% for item in top_3_students %}
+                            <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                <span>{{ forloop.counter }}. <strong>{{ item.member.full_name }}</strong></span>
+                                <span class="badge bg-success">GPA: {{ item.gpa }} ({{ item.passed_count }} passed)</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if worst_student %}
+                        <p class="small text-muted fw-bold mb-1">Needs Improvement (Lowest GPA):</p>
+                        <div class="alert alert-warning p-2 small mb-0 d-flex justify-content-between align-items-center">
+                            <span><strong>{{ worst_student.member.full_name }}</strong></span>
+                            <span class="badge bg-danger">GPA: {{ worst_student.gpa }}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted small mb-0">{{ t.no_gpa_data }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- All Exams Table -->
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3" style="color: #2b2d42;">📋 Exam Registrations & Literature</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Student</th>
+                                <th>Exam Name</th>
+                                <th>Recommended Book</th>
+                                <th>Status / Grade</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ex in exams %}
+                            <tr>
+                                <td>{{ ex.id }}</td>
+                                <td>{{ ex.member.full_name }}</td>
+                                <td><strong>{{ ex.exam_name }}</strong></td>
+                                <td>
+                                    {% if ex.recommended_book %}
+                                        <span class="text-primary">📖 {{ ex.recommended_book.title }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ex.grade >= 6.0 %}
+                                        <span class="badge bg-success">Passed ({{ ex.grade }})</span>
+                                    {% elif ex.grade > 0.0 %}
+                                        <span class="badge bg-danger">Failed ({{ ex.grade }})</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pending / Not Graded</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ex.registration_date|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No exam registrations found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

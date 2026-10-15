@@ -1,0 +1,196 @@
+{% extends 'erp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">💰 {{ t.financial_ledger }}</h2>
+
+    <!-- Financial Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ t.total_income }}</h5>
+                    <h3>{{ total_income|floatformat:2 }} €</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ t.total_expenses }}</h5>
+                    <h3>{{ total_expense|floatformat:2 }} €</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ t.net_balance }}</h5>
+                    <h3>{{ net_balance|floatformat:2 }} €</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form & CSV Export -->
+    <div class="card shadow-sm mb-4 p-3 bg-light">
+        <form method="GET" class="filter-form" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div>
+                <label class="form-label small fw-bold">{{ t.filter_type }}:</label>
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">-- {% if request.session.lang == 'de' %}Alle Typen{% elif request.session.lang == 'hr' %}Sve vrste{% else %}All Types{% endif %} --</option>
+                    <option value="INCOME" {% if selected_type == 'INCOME' %}selected{% endif %}>{% if request.session.lang == 'de' %}Einnahmen{% elif request.session.lang == 'hr' %}Prihod{% else %}Income{% endif %}</option>
+                    <option value="EXPENSE" {% if selected_type == 'EXPENSE' %}selected{% endif %}>{% if request.session.lang == 'de' %}Ausgaben{% elif request.session.lang == 'hr' %}Rashod{% else %}Expense{% endif %}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label small fw-bold">{{ t.filter_category }}:</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">-- {% if request.session.lang == 'de' %}Alle Kategorien{% elif request.session.lang == 'hr' %}Sve kategorije{% else %}All Categories{% endif %} --</option>
+                    <optgroup label="{% if request.session.lang == 'de' %}Einnahmen{% elif request.session.lang == 'hr' %}Prihodi{% else %}Income Categories{% endif %}">
+                        {% for code, label in income_categories %}
+                            <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="{% if request.session.lang == 'de' %}Ausgaben{% elif request.session.lang == 'hr' %}Rashodi{% else %}Expense Categories{% endif %}">
+                        {% for code, label in expense_categories %}
+                            <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div>
+                <label class="form-label small fw-bold">{{ t.filter_method }}:</label>
+                <select name="method" class="form-select form-select-sm">
+                    <option value="">-- {% if request.session.lang == 'de' %}Alle Methoden{% elif request.session.lang == 'hr' %}Sve metode{% else %}All Methods{% endif %} --</option>
+                    <option value="Cash" {% if selected_method == 'Cash' %}selected{% endif %}>Cash / Gotovina</option>
+                    <option value="IBAN" {% if selected_method == 'IBAN' %}selected{% endif %}>IBAN / TRR</option>
+                    <option value="PayPal" {% if selected_method == 'PayPal' %}selected{% endif %}>PayPal</option>
+                    <option value="Canteen Card" {% if selected_method == 'Canteen Card' %}selected{% endif %}>Canteen Card / Mensa kartica</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label small fw-bold">{{ t.show_per_page }}:</label>
+                <select name="per_page" class="form-select form-select-sm">
+                    <option value="5" {% if selected_per_page == '5' %}selected{% endif %}>5</option>
+                    <option value="10" {% if selected_per_page == '10' %}selected{% endif %}>10</option>
+                    <option value="25" {% if selected_per_page == '25' %}selected{% endif %}>25</option>
+                    <option value="50" {% if selected_per_page == '50' %}selected{% endif %}>50</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-dark btn-sm px-3" style="height: 31px;">{{ t.filter_btn }}</button>
+                <a href="{% url 'financial' %}" class="btn btn-secondary btn-sm px-3 text-decoration-none" style="height: 31px; line-height: 20px;">{{ t.reset_btn }}</a>
+                <button type="submit" name="export" value="csv" class="btn btn-success btn-sm px-3" style="height: 31px;">📥 {{ t.export_csv }}</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">📋 {{ t.recent_transactions }}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ t.th_id }}</th>
+                            <th>{{ t.th_date }}</th>
+                            <th>{{ t.th_type }}</th>
+                            <th>{{ t.th_category }}</th>
+                            <th>{{ t.th_member }}</th>
+                            <th>{{ t.th_method }}</th>
+                            <th>{{ t.th_amount }}</th>
+                            <th>{{ t.th_verified }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tr in transactions %}
+                        <tr>
+                            <td>{{ tr.id }}</td>
+                            <td>{{ tr.date|date:"M d, Y, P" }}</td>
+                            <td>
+                                {% if tr.transaction_type == 'INCOME' %}
+                                    <span class="badge bg-success">{% if request.session.lang == 'de' %}Einnahme{% elif request.session.lang == 'hr' %}Prihod{% else %}Income{% endif %}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{% if request.session.lang == 'de' %}Ausgabe{% elif request.session.lang == 'hr' %}Rashod{% else %}Expense{% endif %}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ tr.category }}</td>
+                            <td>
+                                {% if tr.member %}
+                                    {{ tr.member.full_name }} (<span class="text-muted">{{ tr.member.get_member_type_display }}</span>)
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ tr.payment_method }}</td>
+                            <td class="fw-bold {% if tr.transaction_type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
+                                {% if tr.transaction_type == 'INCOME' %}+{% else %}-{% endif %}{{ tr.amount }} €
+                            </td>
+                            <td>
+                                {% if tr.is_verified %}
+                                    <span class="text-success">✔</span>
+                                {% else %}
+                                    <span class="text-warning">⏳</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">{{ t.no_transactions }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if transactions.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination pagination-sm justify-content-center">
+            {% if transactions.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&type={{ selected_type|default:'' }}&category={{ selected_category|default:'' }}&method={{ selected_method|default:'' }}&per_page={{ selected_per_page }}">&laquo; {% if request.session.lang == 'de' %}Erste{% elif request.session.lang == 'hr' %}Prva{% else %}First{% endif %}</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.previous_page_number }}&type={{ selected_type|default:'' }}&category={{ selected_category|default:'' }}&method={{ selected_method|default:'' }}&per_page={{ selected_per_page }}">{% if request.session.lang == 'de' %}Vorherige{% elif request.session.lang == 'hr' %}Prethodna{% else %}Previous{% endif %}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo; {% if request.session.lang == 'de' %}Erste{% elif request.session.lang == 'hr' %}Prva{% else %}First{% endif %}</span></li>
+                <li class="page-item disabled"><span class="page-link">{% if request.session.lang == 'de' %}Vorherige{% elif request.session.lang == 'hr' %}Prethodna{% else %}Previous{% endif %}</span></li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">
+                    {% if request.session.lang == 'de' %}Seite {{ transactions.number }} von {{ transactions.paginator.num_pages }}
+                    {% elif request.session.lang == 'hr' %}Stranica {{ transactions.number }} od {{ transactions.paginator.num_pages }}
+                    {% else %}Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}{% endif %}
+                </span>
+            </li>
+
+            {% if transactions.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.next_page_number }}&type={{ selected_type|default:'' }}&category={{ selected_category|default:'' }}&method={{ selected_method|default:'' }}&per_page={{ selected_per_page }}">{% if request.session.lang == 'de' %}Nächste{% elif request.session.lang == 'hr' %}Sljedeća{% else %}Next{% endif %}</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.paginator.num_pages }}&type={{ selected_type|default:'' }}&category={{ selected_category|default:'' }}&method={{ selected_method|default:'' }}&per_page={{ selected_per_page }}">{% if request.session.lang == 'de' %}Letzte{% elif request.session.lang == 'hr' %}Zadnja{% else %}Last{% endif %} &raquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">{% if request.session.lang == 'de' %}Nächste{% elif request.session.lang == 'hr' %}Sljedeća{% else %}Next{% endif %}</span></li>
+                <li class="page-item disabled"><span class="page-link">{% if request.session.lang == 'de' %}Letzte{% elif request.session.lang == 'hr' %}Zadnja{% else %}Last{% endif %} &raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}
